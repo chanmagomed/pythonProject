@@ -6,7 +6,7 @@ import os
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
 from pydub.silence import get_time
-from deep_translator import MyMemoryTranslator
+from deep_translator import GoogleTranslator
 podcasts = os.listdir("podcasts")
 def ms2s(ms):
     mspart = ms % 1000
@@ -70,6 +70,9 @@ def silence_based_conversion(path="podcast.mp3", voids=500, db=-45,addDb=0):
     i = 0
     # process each chunk
     print(len(chunks))
+    rec=""
+    rec_full=""
+    tm=""
     for chunk in chunks:
 
         # Create 0.5 seconds silence chunk
@@ -108,22 +111,28 @@ def silence_based_conversion(path="podcast.mp3", voids=500, db=-45,addDb=0):
 
         try:
             # try converting it to text
-            rec = r.recognize_google(audio_listened)
-            # write the output to the file.
-            #rec = MyMemoryTranslator( source="en", target='ru').translate(rec)
-            fh.write(str(i)+"\n")
-            fh.write(ms2s(co[0][i]) + " --> " + ms2s(co[1][i])+"\n")
-            fh.write(rec + ".\n \n")
-
-        # catch any errors.
+            rec = rec+r.recognize_google(audio_listened)+".\n"
+            tm=tm+(ms2s(co[0][i]) + " --> " + ms2s(co[1][i])+"\n")
+            # catch any errors.
         except sr.UnknownValueError:
             print("Could not understand audio")
 
         except sr.RequestError as e:
             print("Could not request results. check your internet connection")
 
-        i += 1
+        if len(rec) > 4000 or i == len(chunks)-1:
 
+            rec = GoogleTranslator(source="en", target='ru').translate(rec)
+            rec_full = rec_full+rec
+            rec=""
+
+        i += 1
+    rec_split=rec_full.split("\n")
+    tm_split=tm.split("\n")
+    for ii in range(len(rec_split)):
+        fh.write(str(ii)+"\n")
+        fh.write(tm_split[ii]+"\n")
+        fh.write(rec_split[ii]+"\n\n")
     os.chdir('..')
 
 
